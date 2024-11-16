@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+venv/
+myenv/
+.vscode/
+.idea/
+.DS_Store       # macOS
+ingest/
