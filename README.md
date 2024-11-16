@@ -59,11 +59,14 @@ uncompressed format: cities as csv, regions as jsonl, provinces as jsonl, weathe
 
    sudo systemctl restart postgresql
 
-3. Execute the script setup_db.sql in your posrgresql database
+3. Execute the script setup_db.sql in your posrgresql database for create the tables
+   ```bash
+
+   setup_db.sql
 
 ## Deployment Instructions
 
-1. Push your code to this repository.  
+1. Push your code to this repository github, the github action has been configured (with secrets) and actions for run every push will copy the dag into the machine of airflow
 2. The **GitHub Actions** workflow will automatically trigger deployment and execute the `script.py` file within Airflow.
 
 ---
