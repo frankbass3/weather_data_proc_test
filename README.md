@@ -42,8 +42,12 @@ This repository contains scripts to set up a PostgreSQL database and an Apache A
      ```bash
      ./setup_airflow.sh
      ```
+   - Then execute the script setup_db.sql in your posrgresql database for create the tables
+   ```bash
+      setup_db.sql
+   ```
 
-### Step 2: Configure PostgreSQL on the VM
+### Step 2: In case of configure PostgreSQL on the VM for allows external connections
 
 1. Edit PostgreSQL's configuration file to allow external connections:  
    ```bash
@@ -65,11 +69,6 @@ This repository contains scripts to set up a PostgreSQL database and an Apache A
    ```bash
 
    sudo systemctl restart postgresql
-
-3. Execute the script setup_db.sql in your posrgresql database for create the tables
-   ```bash
-
-   setup_db.sql
 
 ## Deployment Instructions
 

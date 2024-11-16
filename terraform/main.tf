@@ -3,15 +3,35 @@ provider "aws" {
 }
 
 # Create a security group for the EC2 instance
-resource "aws_security_group" "allow_ssh" {
-  name_prefix = "allow_ssh"
-  description = "Allow SSH inbound traffic"
+resource "aws_security_group" "allow_ports" {
+  name_prefix = "allow_ports"
+  description = "Allow SSH, HTTP, and PostgreSQL inbound traffic"
+
+  # Allow inbound SSH traffic on port 22
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]  # Allows access from anywhere
   }
+
+  # Allow inbound HTTP traffic on port 8080
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allows access from anywhere
+  }
+
+  # Allow inbound PostgreSQL traffic on port 5432
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allows access from anywhere
+  }
+
+  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -29,10 +49,10 @@ resource "aws_key_pair" "my_key" {
 # Provision the EC2 instance
 resource "aws_instance" "my_vm" {
   ami           = "ami-0c55b159cbfafe1f0"  # Replace with your desired AMI ID
-  instance_type = "t2.micro"  # Choose your instance type
+  instance_type = "t2.medium"  # Use t2.medium instance type
   key_name      = aws_key_pair.my_key.key_name
 
-  security_groups = [aws_security_group.allow_ssh.name]
+  security_groups = [aws_security_group.allow_ports.name]
 
   tags = {
     Name = "MyTerraformEC2"
