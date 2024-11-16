@@ -1,44 +1,51 @@
-# Project Setup: PostgreSQL and Airflow Configuration
+# Project Testing: Sample Data Ingestion in PostgreSQL with Airflow, Python, and GitHub Actions
 
-This repository provides scripts to set up a PostgreSQL database and an Apache Airflow environment on a provisioned machine. Follow the steps below for the configuration.
+This repository contains scripts to set up a PostgreSQL database and an Apache Airflow environment on a provisioned machine. Follow the steps below for the configuration.
 
 ---
 
 ## Prerequisites
 
-1. **Provisioned Machine:** Ensure you have a machine provisioned and ready for use.  
+1. **Provisioned Machine:** Ensure you have a machine provisioned and ready for use. If not, you can use the Terraform script in the `terraform` folder. See the **Notes** section for more details.  
 2. **Execution Permissions:** Grant execution roles to the following scripts:
    - `setup_postgres.sh`
    - `setup_airflow.sh`
-3. **Networking:** If PostgreSQL and Airflow are hosted on separate machines, ensure the following:
-   - PostgreSQL's port (default: 5432) is open for external connections.
-   - Machines on different VPCs require a VPC peering connection and proper routing.
-4. **Setup Airflow** Connecto to airflow user interface and setup the connection to the postgresql db
-5. **Hypotesis:** The following:
-   - The files cities, regions, provinces, weather arrives inside the VM already in 
-uncompressed format: cities as csv, regions as jsonl, provinces as jsonl, weather as json.
-   - They are in 4 different folders: /cities, /regions, /provinces, /weather
-   - The cities, regions and provinces do not change so they are in full overwrite also because they are a few amount of data. 
+3. **Networking:**
+   - If PostgreSQL and Airflow are hosted on separate machines, ensure PostgreSQL's port (default: 5432) is open for external connections.
+   - If they are in different VPCs, a VPC peering connection and proper routing must be set up.
+4. **Airflow Setup:** Connect to the Airflow user interface and configure the connection to the PostgreSQL database.
+5. **Data Hypothesis:**
+   - The following files are expected to arrive in the VM already uncompressed:
+     - `cities` as CSV
+     - `regions` as JSONL
+     - `provinces` as JSONL
+     - `weather` as JSON
+   - These files should be located in the following directories:
+     - `/cities`
+     - `/regions`
+     - `/provinces`
+     - `/weather`
+   - The `cities`, `regions`, and `provinces` data do not change frequently, so they will be fully overwritten. These datasets are relatively small.
 
 ---
 
 ## Installation Steps
 
-### Step 1: Run the Setup Scripts into the VM
+### Step 1: Run the Setup Scripts on the VM
 
 1. Execute the following scripts in the specified order:
    - First, run:  
      ```bash
      ./setup_postgres.sh
      ```
-   - Next, run:  
+   - Then, run:  
      ```bash
      ./setup_airflow.sh
      ```
 
-### Step 2: Configure PostgreSQL into the VM
+### Step 2: Configure PostgreSQL on the VM
 
-1. Edit PostgreSQL's configuration file to allow connections:  
+1. Edit PostgreSQL's configuration file to allow external connections:  
    ```bash
    sudo nano /etc/postgresql/16/main/postgresql.conf
 
@@ -66,12 +73,20 @@ uncompressed format: cities as csv, regions as jsonl, provinces as jsonl, weathe
 
 ## Deployment Instructions
 
-1. Push your code to this repository github, the github action has been configured (with secrets) and actions for run every push will copy the dag into the machine of airflow
+1. Push your code to this repository on GitHub. The GitHub Actions workflow has been configured (with secrets), and actions will run on every push to automatically copy the DAG to the Airflow machine.  
 2. The **GitHub Actions** workflow will automatically trigger deployment and execute the `script.py` file within Airflow.
 
 ---
 
 ## Notes
-- Ensure all security group or firewall rules are configured properly for network connections.
-- Test the connectivity between the PostgreSQL database and Airflow to validate the setup.
+1. To run a VM, the script uses AWS Cloud, and for this, you can use the Terraform script in the `/Terraform` folder.  
+You need to run:
+```bash
+
+terraform init
+terraform plan
+terraform apply
+
+2. Ensure all security group or firewall rules are configured properly for network connections.
+3. Test the connectivity between the PostgreSQL database and Airflow to validate the setup.
 
