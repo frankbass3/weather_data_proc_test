@@ -86,6 +86,7 @@ You need to run:
 terraform init
 terraform plan
 terraform apply
+```
 
 2. Ensure all security group or firewall rules are configured properly for network connections.
 3. Test the connectivity between the PostgreSQL database and Airflow to validate the setup.
