@@ -5,7 +5,7 @@ on:
     branches:
       - main  # Trigger deployment on push to the main branch
     paths:
-      - "script.py"  # Only trigger when script.py is updated
+      - "dags/script.py"  # Only trigger when script.py is updated
 
 jobs:
   deploy:
@@ -21,7 +21,10 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts  # Use the secret for public IP
+      
+      - name: Debug file paths
+        run: ls -R
 
       - name: Copy script.py to EC2 instance
         run: |
-          scp -i ~/.ssh/id_rsa ../../dags/script.py ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/airflow/dags/script.py  # Use the secret for public IP
+          scp -i ~/.ssh/id_rsa dags/script.py ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/airflow/dags/script.py  # Use the secret for public IP
