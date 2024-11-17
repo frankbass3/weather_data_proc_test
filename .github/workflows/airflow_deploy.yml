@@ -26,4 +26,4 @@ jobs:
 
       - name: Copy script.py to EC2 instance
         run: |
-          scp -i ~/.ssh/id_rsa dags/script.py ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/airflow/dags/script.py  # Use the secret for public IP
+          scp -v -i ~/.ssh/id_rsa dags/script.py ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/airflow/dags/script.py
