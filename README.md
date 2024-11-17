@@ -20,7 +20,7 @@ This repository contains scripts to set up a PostgreSQL database and an Apache A
      - `regions` as JSONL
      - `provinces` as JSONL
      - `weather` as JSON
-   - These files should be located in the following directories:
+   - These files should be located in directory /ingest and the following sub-directories:
      - `/cities`
      - `/regions`
      - `/provinces`

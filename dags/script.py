@@ -16,6 +16,11 @@ def process_weather_data(**kwargs):
     # Process the weather data (your existing logic)
     for record in weather_data['hourly']['data']:
         processed_data.append({
+            'latitude' : weather_data["latitude"],
+            'longitude' : weather_data["longitude"],
+            'timezone' : weather_data["timezone"],
+            'offset' : weather_data["offset"],
+            'elevation' : weather_data["elevation"],
             'time': datetime.utcfromtimestamp(record['time']),
             'icon': record['icon'],
             'summary': record['summary'],
@@ -35,7 +40,7 @@ def process_weather_data(**kwargs):
     
     kwargs['ti'].xcom_push(key='processed_weather_data', value=processed_data)
 
-# Load Weather Data to PostgreSQL (as you had before)
+# Load Weather Data to PostgreSQL (as you had before) comment
 def load_weather_data_to_postgresql(**kwargs):
     processed_data = kwargs['ti'].xcom_pull(task_ids='process_weather_data', key='processed_weather_data')
     
@@ -53,14 +58,20 @@ def load_weather_data_to_postgresql(**kwargs):
 
     insert_query = """
     INSERT INTO weather_data (
+        latitude, longitude, timezone, offset, elevation,
         time, icon, summary, precip_intensity, precip_accumulation,
         precip_type, temperature, apparent_temperature, dew_point, pressure,
         wind_speed, wind_gust, wind_bearing, cloud_cover, snow_accumulation
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
 
     for record in processed_data:
         cursor.execute(insert_query, (
+            record['latitude'],
+            record['longitude'],
+            record['timezone'], 
+            record['offset'], 
+            record['elevation'], 
             record['time'],
             record['icon'],
             record['summary'],
@@ -211,7 +222,7 @@ with DAG(
         'start_date': datetime(2024, 11, 16),
         'retries': 1,
     },
-    description='ETL to process weather data and CSV data in parallel and store in PostgreSQL',
+    description='ETL to process weather data and CSV data and store in PostgreSQL',
     schedule_interval=None,  # Set the schedule interval as needed
 ) as dag:
 
@@ -255,9 +266,6 @@ with DAG(
         provide_context=True,
     )
 
-    # Define the task dependencies
-    get_weather_data >> process_weather_data >> load_weather_data_to_postgresql
-    get_csv_data >> process_csv_data >> load_csv_data_to_postgresql
     
     process_province_jsonl_task = PythonOperator(
     task_id='process_province_jsonl',
@@ -266,8 +274,6 @@ with DAG(
     dag=dag,
     )
 
-    # Example of defining dependencies (here, it's a single task but you can add more tasks as needed)
-    process_province_jsonl_task
 
     process_jsonl_task = PythonOperator(
     task_id='process_jsonl',
@@ -275,6 +281,13 @@ with DAG(
     op_kwargs={'jsonl_file_path': '/path/to/your/jsonl_file.jsonl'},
     dag=dag,
     )
+
+    # Define the task dependencies
+    get_weather_data >> process_weather_data >> load_weather_data_to_postgresql
+    get_csv_data >> process_csv_data >> load_csv_data_to_postgresql
+
+    # Example of defining dependencies (here, it's a single task but you can add more tasks as needed)
+    process_province_jsonl_task
 
     # Example of defining dependencies, here it's a single task but you can add more tasks
     process_jsonl_task
