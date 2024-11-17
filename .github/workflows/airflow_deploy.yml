@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main  # Trigger deployment on push to the main branch
-    paths:
-      - "dags/script.py"  # Only trigger when script.py is updated
-
+      
 jobs:
   deploy:
     runs-on: ubuntu-latest  # GitHub Actions runner
