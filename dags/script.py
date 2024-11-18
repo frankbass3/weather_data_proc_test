@@ -5,8 +5,8 @@ import psycopg2
 import pandas as pd
 import json
 from datetime import datetime
+from psycopg2.extras import execute_values
 PWD = ""
-
 # Process Weather Data (as you had before)
 def process_weather_data(**kwargs):
     raw_data = kwargs['ti'].xcom_pull(task_ids='get_weather_data')  # Pull data from XCom if needed
@@ -211,23 +211,33 @@ def load_csv_data_to_postgresql_cities(**kwargs):
     INSERT INTO cities (
         sigla_provincia, codice_istat, denominazione_ita_altra, denominazione_ita, 
         denominazione_altra, flag_capoluogo, codice_belfiore, lat, lon, superficie_kmq, codice_sovracomunale
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ) VALUES  %s
     """
 
-    for record in processed_data:
-        cursor.execute(insert_query, (
-            record['sigla_provincia'] if 'sigla_provincia' in record else '', 
-            record['codice_istat'] if 'codice_istat' in record else '',
-            record['denominazione_ita_altra'] if 'denominazione_ita_altra' in record else '',
-            record['denominazione_ita'] if 'denominazione_ita' in record else '',
-            record['denominazione_altra'] if 'denominazione_altra' in record else '',
-            record['flag_capoluogo'] if 'flag_capoluogo' in record else '',
-            record['codice_belfiore'] if 'codice_belfiore' in record else '',
-            record['lat'] if 'lat' in record else None,
-            record['lon'] if 'lon' in record else None,
-            record['superficie_kmq'] if 'superficie_kmq' in record else None,
-            record['codice_sovracomunale'] if 'codice_sovracomunale' in record else ''
-        ))
+    # Prepare data for bulk insertion
+    values = [
+        (
+            record.get('sigla_provincia', ''),
+            record.get('codice_istat', ''),
+            record.get('denominazione_ita_altra', ''),
+            record.get('denominazione_ita', ''),
+            record.get('denominazione_altra', ''),
+            record.get('flag_capoluogo', ''),
+            record.get('codice_belfiore', ''),
+            record.get('lat', None),
+            record.get('lon', None),
+            record.get('superficie_kmq', None),
+            record.get('codice_sovracomunale', '')
+        )
+        for record in processed_data
+    ]
+
+    # Define batch size
+    BATCH_SIZE = 10000
+
+    # Insert data in batches
+    for i in range(0, len(values), BATCH_SIZE):
+        execute_values(cursor, insert_query, values[i:i + BATCH_SIZE])
 
     connection.commit()
     cursor.close()
@@ -244,7 +254,6 @@ with DAG(
     description='ETL to process weather data and CSV data and store in PostgreSQL',
     schedule_interval=None,  # Set the schedule interval as needed
 ) as dag:
-    
     # Task to get weather data  
     get_weather_data = PythonOperator(
         task_id='get_weather_data',
