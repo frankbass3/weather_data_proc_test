@@ -18,9 +18,9 @@ def process_weather_data(**kwargs):
             'latitude' : weather_data["latitude"],
             'longitude' : weather_data["longitude"],
             'timezone' : weather_data["timezone"],
-            'offset_data' : weather_data["offset_data"],
+            'offset_data' : weather_data["offset"],
             'elevation' : weather_data["elevation"],
-            'time': datetime.utcfromtimestamp(record['time']),
+            'current_time_t': datetime.utcfromtimestamp(record['time']),
             'icon': record['icon'],
             'summary': record['summary'],
             'precip_intensity': record['precipIntensity'],
@@ -58,7 +58,7 @@ def load_weather_data_to_postgresql(**kwargs):
     insert_query = """
     INSERT INTO weather_data (
         latitude, longitude, timezone, offset_data, elevation,
-        time, icon, summary, precip_intensity, precip_accumulation,
+        current_time_t, icon, summary, precip_intensity, precip_accumulation,
         precip_type, temperature, apparent_temperature, dew_point, pressure,
         wind_speed, wind_gust, wind_bearing, cloud_cover, snow_accumulation
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -71,7 +71,7 @@ def load_weather_data_to_postgresql(**kwargs):
             record['timezone'], 
             record['offset_data'], 
             record['elevation'], 
-            record['time'],
+            record['current_time_t'],
             record['icon'],
             record['summary'],
             record['precip_intensity'],
@@ -165,15 +165,15 @@ def insert_data_jsonl_regions(region_data):
         conn.close()
 
 # Process CSV Data (as you had before)
-def process_csv_data(**kwargs):
+def process_csv_data_cities(**kwargs):
     file_path = kwargs['ti'].xcom_pull(task_ids='get_csv_data')  # Pull the file path from XCom if needed
     weather_data = pd.read_csv(file_path)
     processed_data = weather_data.to_dict(orient='records')  # Convert the DataFrame to a list of dictionaries
     kwargs['ti'].xcom_push(key='processed_csv_data', value=processed_data)
 
 # Load CSV Data to PostgreSQL (as you had before)
-def load_csv_data_to_postgresql(**kwargs):
-    processed_data = kwargs['ti'].xcom_pull(task_ids='process_csv_data', key='processed_csv_data')
+def load_csv_data_to_postgresql_cities(**kwargs):
+    processed_data = kwargs['ti'].xcom_pull(task_ids='process_csv_data_cities', key='processed_csv_data')
     
     conn_id = "postgres_conn"  # Replace with your connection ID
     conn = BaseHook.get_connection(conn_id)
@@ -252,41 +252,39 @@ with DAG(
     )
 
     # Task to process CSV data
-    process_csv_data = PythonOperator(
-        task_id='process_csv_data',
-        python_callable=process_csv_data,
+    process_csv_data_cities = PythonOperator(
+        task_id='process_csv_data_cities',
+        python_callable=process_csv_data_cities,
         provide_context=True,
     )
 
     # Task to load CSV data into PostgreSQL
-    load_csv_data_to_postgresql = PythonOperator(
-        task_id='load_csv_data_to_postgresql',
-        python_callable=load_csv_data_to_postgresql,
+    load_csv_data_to_postgresql_cities = PythonOperator(
+        task_id='load_csv_data_to_postgresql_cities',
+        python_callable=load_csv_data_to_postgresql_cities,
         provide_context=True,
     )
 
     
-    process_province_jsonl_task = PythonOperator(
-    task_id='process_province_jsonl',
-    python_callable=process_jsonl_file_provence,
-    op_kwargs={'jsonl_file_path': '/path/to/your/province_data.jsonl'},  # Path to your JSONL file
-    dag=dag,
-    )
+    # process_province_jsonl_task = PythonOperator(
+    #     task_id='process_province_jsonl',
+    #     python_callable=process_jsonl_file_provence,
+    #     op_kwargs={'jsonl_file_path': '/path/to/your/province_data.jsonl'},  # Path to your JSONL file
+    #     dag=dag,
+    # )
 
 
-    process_jsonl_task = PythonOperator(
-    task_id='process_jsonl',
-    python_callable=process_jsonl_file_regions,
-    op_kwargs={'jsonl_file_path': '/path/to/your/jsonl_file.jsonl'},
-    dag=dag,
+    process_jsonl_region = PythonOperator(
+        task_id='process_jsonl',
+        python_callable=process_jsonl_file_regions,
+        op_kwargs={'jsonl_file_path': '/path/to/your/jsonl_file.jsonl'},
+        dag=dag,
     )
 
     # Define the task dependencies
     get_weather_data >> process_weather_data >> load_weather_data_to_postgresql
-    get_csv_data >> process_csv_data >> load_csv_data_to_postgresql
+    get_csv_data >> process_csv_data_cities >> load_csv_data_to_postgresql_cities
 
-    # Example of defining dependencies (here, it's a single task but you can add more tasks as needed)
-    process_province_jsonl_task
+    # process_province_jsonl_task
 
-    # Example of defining dependencies, here it's a single task but you can add more tasks
-    process_jsonl_task
+    process_jsonl_region

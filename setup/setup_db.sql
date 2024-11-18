@@ -8,23 +8,24 @@ CREATE TABLE IF NOT EXISTS weather_data (
     timezone VARCHAR(50),
     offset_data FLOAT,
     elevation INT,
-    current_time BIGINT NOT NULL,
+    current_time_t BIGINT NOT NULL,
     icon VARCHAR(50),
     summary TEXT,
     precip_intensity FLOAT,
     precip_accumulation FLOAT,
     precip_type VARCHAR(50),
     temperature FLOAT,
-    apparent_temperature FLOAT
+    apparent_temperature FLOAT,
     dew_point FLOAT,
     pressure FLOAT,
     wind_speed FLOAT,
     wind_gust FLOAT,
-    wind_bearing FLOAT
+    wind_bearing FLOAT,
     cloud_cover FLOAT,
     snow_accumulation FLOAT,
-    PRIMARY KEY (latitude, longitude, current_time)
+    PRIMARY KEY (latitude, longitude, current_time_t)
 );
+
 
 CREATE TABLE IF NOT EXISTS regions (
     region_name VARCHAR(100) NOT NULL,
