@@ -1,6 +1,5 @@
 from airflow import DAG
-from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.python.operators.python import PythonOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.base_hook import BaseHook
 import psycopg2
 import pandas as pd
