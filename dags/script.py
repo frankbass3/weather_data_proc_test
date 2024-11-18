@@ -159,8 +159,11 @@ def insert_data_jsonl_regions(region_data):
         insert_query = """
             INSERT INTO regions (region_name, region_istat, region_boundaries)
             VALUES (%s, %s, ST_GeomFromText(%s, 4326)::polygon)
+            ON CONFLICT (region_istat) DO NOTHING;
         """
-        cursor.execute(insert_query, (region_data['region_name'], region_data['region_istat'], region_data['region_boundaries']))
+        cursor.execute(insert_query, (region_data['region_name'], 
+                                      region_data['region_istat'], 
+                                      region_data['region_boundaries']))
         connection.commit()
     except Exception as e:
         print(f"Error inserting data: {e}")
@@ -172,8 +175,19 @@ def insert_data_jsonl_regions(region_data):
 # Process CSV Data (as you had before)
 def process_csv_data_cities(**kwargs):
     file_path = kwargs['ti'].xcom_pull(task_ids='get_csv_data')  # Pull the file path from XCom if needed
-    weather_data = pd.read_csv(file_path)
+    
+    weather_data = pd.read_csv(
+        file_path, 
+        sep=';',  # Use semicolon as delimiter
+        decimal=',',  # Handle European decimal format
+    )
+    # Convert lat and lon to floats, replacing commas with dots
+    weather_data['lat'] = weather_data['lat'].astype(str).str.replace(',', '.').astype(float)
+    weather_data['lon'] = weather_data['lon'].astype(str).str.replace(',', '.').astype(float)
+    # Convert superficie_kmq to float
+    weather_data['superficie_kmq'] = weather_data['superficie_kmq'].astype(str).str.replace(',', '.').astype(float)
     processed_data = weather_data.to_dict(orient='records')  # Convert the DataFrame to a list of dictionaries
+
     kwargs['ti'].xcom_push(key='processed_csv_data', value=processed_data)
 
 # Load CSV Data to PostgreSQL (as you had before)
@@ -208,9 +222,9 @@ def load_csv_data_to_postgresql_cities(**kwargs):
             record['denominazione_altra'] if 'denominazione_altra' in record else '',
             record['flag_capoluogo'] if 'flag_capoluogo' in record else '',
             record['codice_belfiore'] if 'codice_belfiore' in record else '',
-            record['lat'] if 'lat' in record else '',
-            record['lon'] if 'lon' in record else '',
-            record['superficie_kmq'] if 'superficie_kmq' in record else '',
+            record['lat'] if 'lat' in record else None,
+            record['lon'] if 'lon' in record else None,
+            record['superficie_kmq'] if 'superficie_kmq' in record else None,
             record['codice_sovracomunale'] if 'codice_sovracomunale' in record else ''
         ))
 
