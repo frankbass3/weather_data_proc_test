@@ -18,7 +18,7 @@ def process_weather_data(**kwargs):
             'latitude' : weather_data["latitude"],
             'longitude' : weather_data["longitude"],
             'timezone' : weather_data["timezone"],
-            'offset' : weather_data["offset"],
+            'offset_data' : weather_data["offset_data"],
             'elevation' : weather_data["elevation"],
             'time': datetime.utcfromtimestamp(record['time']),
             'icon': record['icon'],
@@ -57,7 +57,7 @@ def load_weather_data_to_postgresql(**kwargs):
 
     insert_query = """
     INSERT INTO weather_data (
-        latitude, longitude, timezone, offset, elevation,
+        latitude, longitude, timezone, offset_data, elevation,
         time, icon, summary, precip_intensity, precip_accumulation,
         precip_type, temperature, apparent_temperature, dew_point, pressure,
         wind_speed, wind_gust, wind_bearing, cloud_cover, snow_accumulation
@@ -69,7 +69,7 @@ def load_weather_data_to_postgresql(**kwargs):
             record['latitude'],
             record['longitude'],
             record['timezone'], 
-            record['offset'], 
+            record['offset_data'], 
             record['elevation'], 
             record['time'],
             record['icon'],

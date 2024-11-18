@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS weather_data (
     latitude FLOAT NOT NULL,
     longitude FLOAT NOT NULL,
     timezone VARCHAR(50),
-    offset FLOAT,
+    offset_data FLOAT,
     elevation INT,
     current_time BIGINT NOT NULL,
     icon VARCHAR(50),
