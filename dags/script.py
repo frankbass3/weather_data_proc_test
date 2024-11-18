@@ -5,7 +5,7 @@ import psycopg2
 import pandas as pd
 import json
 from datetime import datetime
-
+PWD = ""
 
 # Process Weather Data (as you had before)
 def process_weather_data(**kwargs):
@@ -67,6 +67,7 @@ def load_weather_data_to_postgresql(**kwargs):
         precip_type, temperature, apparent_temperature, dew_point, pressure,
         wind_speed, wind_gust, wind_bearing, cloud_cover, snow_accumulation
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT (latitude, longitude, current_time_t) DO NOTHING;
     """
 
     for record in processed_data:
@@ -243,8 +244,6 @@ with DAG(
     description='ETL to process weather data and CSV data and store in PostgreSQL',
     schedule_interval=None,  # Set the schedule interval as needed
 ) as dag:
-
-    PWD = "/Users/francescota/Downloads/code-data-eng-swiss/"
     
     # Task to get weather data  
     get_weather_data = PythonOperator(
