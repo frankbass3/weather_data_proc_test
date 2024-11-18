@@ -6,10 +6,15 @@ import pandas as pd
 import json
 from datetime import datetime
 
+
 # Process Weather Data (as you had before)
 def process_weather_data(**kwargs):
     raw_data = kwargs['ti'].xcom_pull(task_ids='get_weather_data')  # Pull data from XCom if needed
-    weather_data = json.loads(raw_data)
+    
+    with open(raw_data, "r") as file:
+        test_pwd = file.read()
+
+    weather_data = json.loads(test_pwd.strip())
     processed_data = []
     
     # Process the weather data (your existing logic)
@@ -121,13 +126,13 @@ def insert_data_jsonl_provence(province_data):
             VALUES (%s, %s, ST_GeomFromText(%s, 4326))
         """
         cursor.execute(insert_query, (province_data['province_name'], province_data['province_istat_code'], province_data['province_boundaries']))
-        conn.commit()
+        connection.commit()
     except Exception as e:
         print(f"Error inserting data: {e}")
-        conn.rollback()
+        connection.rollback()
     finally:
         cursor.close()
-        conn.close()
+        connection.close()
 
 def process_jsonl_file_regions(**kwargs):
     jsonl_file_path = kwargs['jsonl_file_path']
@@ -153,16 +158,16 @@ def insert_data_jsonl_regions(region_data):
     try:
         insert_query = """
             INSERT INTO regions (region_name, region_istat, region_boundaries)
-            VALUES (%s, %s, ST_GeomFromText(%s, 4326))
+            VALUES (%s, %s, ST_GeomFromText(%s, 4326)::polygon)
         """
         cursor.execute(insert_query, (region_data['region_name'], region_data['region_istat'], region_data['region_boundaries']))
-        conn.commit()
+        connection.commit()
     except Exception as e:
         print(f"Error inserting data: {e}")
-        conn.rollback()
+        connection.rollback()
     finally:
         cursor.close()
-        conn.close()
+        connection.close()
 
 # Process CSV Data (as you had before)
 def process_csv_data_cities(**kwargs):
@@ -188,7 +193,7 @@ def load_csv_data_to_postgresql_cities(**kwargs):
     cursor = connection.cursor()
 
     insert_query = """
-    INSERT INTO province_data (
+    INSERT INTO cities (
         sigla_provincia, codice_istat, denominazione_ita_altra, denominazione_ita, 
         denominazione_altra, flag_capoluogo, codice_belfiore, lat, lon, superficie_kmq, codice_sovracomunale
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -196,17 +201,17 @@ def load_csv_data_to_postgresql_cities(**kwargs):
 
     for record in processed_data:
         cursor.execute(insert_query, (
-            record['sigla_provincia'],
-            record['codice_istat'],
-            record['denominazione_ita_altra'],
-            record['denominazione_ita'],
-            record['denominazione_altra'],
-            record['flag_capoluogo'],
-            record['codice_belfiore'],
-            record['lat'],
-            record['lon'],
-            record['superficie_kmq'],
-            record['codice_sovracomunale']
+            record['sigla_provincia'] if 'sigla_provincia' in record else '', 
+            record['codice_istat'] if 'codice_istat' in record else '',
+            record['denominazione_ita_altra'] if 'denominazione_ita_altra' in record else '',
+            record['denominazione_ita'] if 'denominazione_ita' in record else '',
+            record['denominazione_altra'] if 'denominazione_altra' in record else '',
+            record['flag_capoluogo'] if 'flag_capoluogo' in record else '',
+            record['codice_belfiore'] if 'codice_belfiore' in record else '',
+            record['lat'] if 'lat' in record else '',
+            record['lon'] if 'lon' in record else '',
+            record['superficie_kmq'] if 'superficie_kmq' in record else '',
+            record['codice_sovracomunale'] if 'codice_sovracomunale' in record else ''
         ))
 
     connection.commit()
@@ -214,7 +219,7 @@ def load_csv_data_to_postgresql_cities(**kwargs):
     connection.close()
 
 with DAG(
-    'parallel_etl_dag',
+    'script_dag_py',
     default_args={
         'owner': 'airflow',
         'depends_on_past': False,
@@ -225,10 +230,12 @@ with DAG(
     schedule_interval=None,  # Set the schedule interval as needed
 ) as dag:
 
-    # Task to get weather data
+    PWD = "/Users/francescota/Downloads/code-data-eng-swiss/"
+    
+    # Task to get weather data  
     get_weather_data = PythonOperator(
         task_id='get_weather_data',
-        python_callable=lambda: json.dumps(weather_data),
+        python_callable=lambda: str(PWD+"ingest/weather/2024-05-22.json"),
     )
 
     # Task to process weather data
@@ -248,7 +255,7 @@ with DAG(
     # Task to get CSV data
     get_csv_data = PythonOperator(
         task_id='get_csv_data',
-        python_callable=lambda: '/path/to/your/file.csv',  # Replace with actual file path
+        python_callable=lambda: PWD+'ingest/cities/cities.csv',  # Replace with actual file path
     )
 
     # Task to process CSV data
@@ -265,19 +272,10 @@ with DAG(
         provide_context=True,
     )
 
-    
-    # process_province_jsonl_task = PythonOperator(
-    #     task_id='process_province_jsonl',
-    #     python_callable=process_jsonl_file_provence,
-    #     op_kwargs={'jsonl_file_path': '/path/to/your/province_data.jsonl'},  # Path to your JSONL file
-    #     dag=dag,
-    # )
-
-
     process_jsonl_region = PythonOperator(
-        task_id='process_jsonl',
+        task_id='process_jsonl_region',
         python_callable=process_jsonl_file_regions,
-        op_kwargs={'jsonl_file_path': '/path/to/your/jsonl_file.jsonl'},
+        op_kwargs={'jsonl_file_path': PWD+'ingest/regions/regions.jsonl'},
         dag=dag,
     )
 
@@ -285,6 +283,15 @@ with DAG(
     get_weather_data >> process_weather_data >> load_weather_data_to_postgresql
     get_csv_data >> process_csv_data_cities >> load_csv_data_to_postgresql_cities
 
+    process_jsonl_region
+
+    # process_province_jsonl_task = PythonOperator(
+    #     task_id='process_province_jsonl',
+    #     python_callable=process_jsonl_file_provence,
+    #     op_kwargs={'jsonl_file_path': '/path/to/your/province_data.jsonl'},  # Path to your JSONL file
+    #     dag=dag,
+    # )
+
     # process_province_jsonl_task
 
-    process_jsonl_region
+    

@@ -9,3 +9,4 @@ myenv/
 .idea/
 .DS_Store       # macOS
 ingest/
+test/

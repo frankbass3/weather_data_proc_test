@@ -42,12 +42,16 @@ CREATE TABLE IF NOT EXISTS provinces (
     PRIMARY KEY (province_istat_code)
 );
 
-CREATE TABLE IF NOT EXISTS cities (
-    sigla_provincia VARCHAR(2),
-    codice_istat VARCHAR(10) NOT NULL,
-    denominazione_ita VARCHAR(100),
+CREATE TABLE cities (
+    sigla_provincia VARCHAR(10),
+    codice_istat VARCHAR(10),
+    denominazione_ita_altra VARCHAR(255),
+    denominazione_ita VARCHAR(255),
+    denominazione_altra VARCHAR(255),
+    flag_capoluogo VARCHAR(2),
+    codice_belfiore VARCHAR(10),
     lat FLOAT,
     lon FLOAT,
     superficie_kmq FLOAT,
-    PRIMARY KEY (codice_istat)
+    codice_sovracomunale VARCHAR(10)
 );
